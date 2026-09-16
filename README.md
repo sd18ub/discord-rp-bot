@@ -6,9 +6,16 @@ Bot Discord (Node.js / discord.js) permettant aux membres de creer et consulter 
 
 - `/fiche create` - ouvre le formulaire de creation (4 etapes)
 - `/fiche annuler` - annule une creation en cours
+- `/fiche modifier section:<base|apparence|pouvoirs|historique>` - rouvre uniquement la section choisie, sans tout retaper
 - `/fiche voir [membre]` - affiche ta fiche ou celle d'un autre membre
-- `/fiche liste` - liste toutes les fiches du serveur
-- `/fiche supprimer [membre]` - supprime ta fiche (ou celle d'un autre membre si tu as la permission "Gerer les roles")
+- `/fiche liste [recherche] [rang]` - liste les fiches du serveur, avec filtre optionnel par mot-cle ou par rang/statut
+- `/fiche supprimer [membre]` - supprime ta fiche (ou celle d'un autre membre si tu es staff RP, voir plus bas)
+- `/fiche valider membre statut:<validee|refusee> [commentaire]` - reserve au staff RP, valide ou refuse une fiche
+- `/fiche export [membre]` - exporte une fiche en fichier `.txt` telechargeable
+- `/fiche relation ajouter membre type [confiance] [affection]` - ajoute/met a jour une relation structuree sur ta fiche
+- `/fiche relation retirer membre` - retire une relation
+- `/fiche relation liste [membre]` - affiche les relations d'une fiche
+- `/fiche config role-staff role` - (admin serveur) definit le role charge de valider les fiches
 
 ## Comment fonctionne la creation de fiche
 
@@ -17,15 +24,36 @@ Bot Discord (Node.js / discord.js) permettant aux membres de creer et consulter 
 1. Informations de base (nom, alias, age, genre, statut)
 2. Apparence & personnalite (+ traits positifs/negatifs)
 3. Pouvoirs & faiblesses (+ equipement)
-4. Historique, objectifs, relations
+4. Historique, objectifs, relations (notes libres), lien image
 
-A la derniere etape, la fiche complete est publiee (visible par tout le monde) dans le salon ou `/fiche create` a ete lance, et sauvegardee.
+A la derniere etape, la fiche complete est publiee (visible par tout le monde) dans le salon ou `/fiche create` a ete lance, et sauvegardee. Le brouillon en cours est desormais sauvegarde sur disque a chaque etape : si le bot redemarre avant que tu aies fini, tu peux reprendre en relancant simplement `/fiche create` et en cliquant sur le bouton "Continuer" a nouveau (le contenu deja saisi est preserve).
 
-**Important** : si tu ne termines pas les 4 etapes (le bot redemarre entre-temps, ou tu abandonnes), le brouillon est perdu. Utilise `/fiche annuler` pour repartir de zero si besoin.
+Pour ne corriger qu'une seule section d'une fiche deja terminee, utilise `/fiche modifier` plutot que de tout recreer.
+
+## Validation par un staff RP (optionnel)
+
+Par defaut, aucune validation n'est requise : une fiche terminee est immediatement marquee "validee". Si tu definis un role staff avec `/fiche config role-staff @role` :
+
+- Toute nouvelle fiche creee, ou toute section modifiee via `/fiche modifier`, repasse au statut **"en attente de validation"**
+- Les membres ayant ce role (ou la permission Administrateur) peuvent utiliser `/fiche valider` pour l'accepter ou la refuser, avec un commentaire optionnel
+- Le statut est affiche dans l'embed de la fiche (couleur et badge dedies) et dans `/fiche liste`
+
+Sans role configure, `/fiche supprimer` (sur la fiche d'un autre membre) et `/fiche valider` retombent sur la permission Discord "Gerer les roles".
+
+## Relations structurees
+
+En plus du champ texte libre "Relations" du formulaire, `/fiche relation ajouter` permet d'enregistrer des relations formelles (type + niveaux de confiance/affection sur 10) avec d'autres membres, affichees automatiquement dans l'embed de la fiche.
+
+## Export
+
+`/fiche export` genere un fichier `.txt` reprenant l'integralite d'une fiche (toutes les sections + relations), envoye en message prive (ephemere) a la personne qui utilise la commande.
 
 ## Stockage des donnees
 
-Les fiches terminees sont sauvegardees dans des fichiers JSON locaux, un par serveur : `data/<id-du-serveur>.json`. Ce dossier est ignore par git (jamais commite), donc les fiches restent uniquement sur la machine ou tourne le bot.
+Tout est sauvegarde en JSON local dans le dossier `data/` (ignore par git, jamais commite) :
+- `data/<id-serveur>.json` - les fiches terminees
+- `data/drafts/<id-serveur>_<id-utilisateur>.json` - les brouillons de creation/edition en cours
+- `data/config/<id-serveur>.json` - la configuration du serveur (role staff)
 
 ## 1. Creer l'application et le bot sur Discord
 

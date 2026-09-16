@@ -15,7 +15,7 @@ Bot Discord (Node.js / discord.js) permettant aux membres de creer et consulter 
 - `/fiche relation ajouter membre type [confiance] [affection]` - ajoute/met a jour une relation structuree sur ta fiche
 - `/fiche relation retirer membre` - retire une relation
 - `/fiche relation liste [membre]` - affiche les relations d'une fiche
-- `/fiche config role-staff role` - (admin serveur) definit le role charge de valider les fiches
+- `/fiche config role-staff role [salon]` - (admin serveur) definit le role charge de valider les fiches, et prepare le salon de validation
 
 ## Comment fonctionne la creation de fiche
 
@@ -32,13 +32,16 @@ Pour ne corriger qu'une seule section d'une fiche deja terminee, utilise `/fiche
 
 ## Validation par un staff RP (optionnel)
 
-Par defaut, aucune validation n'est requise : une fiche terminee est immediatement marquee "validee". Si tu definis un role staff avec `/fiche config role-staff @role` :
+Par defaut, aucune validation n'est requise : une fiche terminee est immediatement marquee "validee" et publiee directement dans le salon ou la commande a ete lancee. Si tu definis un role staff avec `/fiche config role-staff @role` :
 
-- Toute nouvelle fiche creee, ou toute section modifiee via `/fiche modifier`, repasse au statut **"en attente de validation"**
-- Les membres ayant ce role (ou la permission Administrateur) peuvent utiliser `/fiche valider` pour l'accepter ou la refuser, avec un commentaire optionnel
+- Le bot **cree automatiquement un salon** `#validation-fiches` (visible uniquement par le role staff et le bot ; `@everyone` n'y a pas acces), et retient son identifiant. Si tu preferes utiliser un salon existant, passe-le en option : `/fiche config role-staff role:@Staff salon:#mon-salon`
+- Toute nouvelle fiche creee, ou toute section modifiee via `/fiche modifier`, repasse au statut **"en attente de validation"** et est postee dans ce salon (l'auteur recoit juste une confirmation privee, la fiche n'est plus publiee immediatement dans le salon d'origine)
+- Les membres ayant le role staff (ou la permission Administrateur) utilisent `/fiche valider` pour l'accepter ou la refuser, avec un commentaire optionnel
 - Le statut est affiche dans l'embed de la fiche (couleur et badge dedies) et dans `/fiche liste`
 
-Sans role configure, `/fiche supprimer` (sur la fiche d'un autre membre) et `/fiche valider` retombent sur la permission Discord "Gerer les roles".
+**Permission requise** : pour que le bot puisse creer et configurer ce salon, il a besoin de la permission Discord **Gerer les salons** (a ajouter lors de l'invitation, voir etape 3, ou directement sur le role du bot dans les parametres du serveur). Sans cette permission, `/fiche config role-staff` te previendra et tu pourras soit la lui accorder, soit relancer la commande en pointant vers un salon existant via l'option `salon`.
+
+Sans role staff configure, `/fiche supprimer` (sur la fiche d'un autre membre) et `/fiche valider` retombent sur la permission Discord "Gerer les roles".
 
 ## Relations structurees
 
@@ -53,7 +56,7 @@ En plus du champ texte libre "Relations" du formulaire, `/fiche relation ajouter
 Tout est sauvegarde en JSON local dans le dossier `data/` (ignore par git, jamais commite) :
 - `data/<id-serveur>.json` - les fiches terminees
 - `data/drafts/<id-serveur>_<id-utilisateur>.json` - les brouillons de creation/edition en cours
-- `data/config/<id-serveur>.json` - la configuration du serveur (role staff)
+- `data/config/<id-serveur>.json` - la configuration du serveur (role staff, salon de validation)
 
 ## 1. Creer l'application et le bot sur Discord
 
@@ -87,9 +90,11 @@ GUILD_ID=l_id_de_ton_serveur
 
 Onglet **OAuth2 > URL Generator** :
 - Scopes : `bot`, `applications.commands`
-- Permissions du bot : **Send Messages**, **Embed Links** suffisent (pas besoin de droits d'administration pour ce bot)
+- Permissions du bot : **Send Messages**, **Embed Links** (pas besoin de droits d'administration pour ce bot). Ajoute aussi **Manage Channels** si tu comptes utiliser la validation par un staff RP (voir plus bas) et laisser le bot creer son salon lui-meme.
 
 Ouvre l'URL generee, choisis ton serveur, autorise.
+
+Si le bot est deja invite sans **Manage Channels** et que tu actives la validation apres coup, tu peux soit l'ajouter directement au role du bot dans Parametres du serveur > Roles, soit fournir un salon existant via l'option `salon` de `/fiche config role-staff`.
 
 ## 4. Deployer les commandes slash
 

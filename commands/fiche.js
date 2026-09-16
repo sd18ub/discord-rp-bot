@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, AttachmentBuilder, MessageFlags } = require('discord.js');
+const { SlashCommandBuilder, AttachmentBuilder, ChannelType, MessageFlags } = require('discord.js');
 const drafts = require('../lib/drafts');
 const db = require('../lib/db');
 const { setGuildConfig } = require('../lib/config');
@@ -6,6 +6,7 @@ const { isStaff, isServerManager } = require('../lib/permissions');
 const { buildFicheEmbed } = require('../lib/embed');
 const { buildFicheText } = require('../lib/textExport');
 const { startWizard, startEdit } = require('../lib/ficheWizard');
+const { ensureValidationChannel } = require('../lib/validationChannel');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -112,8 +113,15 @@ module.exports = {
         .addSubcommand((sub) =>
           sub
             .setName('role-staff')
-            .setDescription('Definit le role staff RP charge de valider les fiches')
+            .setDescription('Definit le role staff RP et son salon de validation')
             .addRoleOption((opt) => opt.setName('role').setDescription('Role staff').setRequired(true))
+            .addChannelOption((opt) =>
+              opt
+                .setName('salon')
+                .setDescription('Salon de validation existant (sinon le bot en cree un automatiquement)')
+                .addChannelTypes(ChannelType.GuildText)
+                .setRequired(false)
+            )
         )
     )
     .setDMPermission(false),
@@ -344,11 +352,27 @@ async function handleConfig(interaction, sub) {
     }
 
     const role = interaction.options.getRole('role', true);
-    setGuildConfig(interaction.guild.id, { staffRoleId: role.id });
+    const salonExistant = interaction.options.getChannel('salon');
 
-    await interaction.reply({
-      content: `Role staff RP defini sur ${role}. Les nouvelles fiches et modifications necessiteront une validation par ce role.`,
-      flags: MessageFlags.Ephemeral,
+    setGuildConfig(interaction.guild.id, {
+      staffRoleId: role.id,
+      ...(salonExistant ? { validationChannelId: salonExistant.id } : {}),
     });
+
+    try {
+      const channel = await ensureValidationChannel(interaction.guild);
+      await interaction.reply({
+        content: `Role staff RP defini sur ${role}. Les fiches en attente de validation seront postees dans ${channel}.`,
+        flags: MessageFlags.Ephemeral,
+      });
+    } catch (err) {
+      await interaction.reply({
+        content:
+          `Role staff RP defini sur ${role}, mais je n'ai pas pu creer/configurer le salon de validation ` +
+          `(${err.message}). Donne-moi la permission **Gerer les salons**, ou relance la commande avec ` +
+          `l'option \`salon\` en pointant vers un salon existant.`,
+        flags: MessageFlags.Ephemeral,
+      });
+    }
   }
 }

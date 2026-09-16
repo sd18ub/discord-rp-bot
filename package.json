@@ -1,0 +1,15 @@
+{
+  "name": "discord-rp-bot",
+  "version": "1.0.0",
+  "description": "Bot Discord pour creer et consulter des fiches de personnage RP",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": {
+    "deploy": "node deploy-commands.js",
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.15.3",
+    "dotenv": "^16.4.5"
+  }
+}
